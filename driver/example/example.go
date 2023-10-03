@@ -1,7 +1,8 @@
-package example
+package main
 
 import (
 	"fmt"
+	"found-relics/pkg/style"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
@@ -44,6 +45,10 @@ void main() {
 }
 `
 
+func main() {
+	pixelgl.Run(Run)
+}
+
 func Run() {
 	cfg := pixelgl.WindowConfig{
 		Title:  "Combat Prototype",
@@ -61,7 +66,7 @@ func Run() {
 	txt := text.New(pixel.V(0, 0), atlas)
 	//txt.LineHeight = atlas.LineHeight() * 1.5
 
-	sheet, err := loadPicture("trees.png")
+	sheet, err := loadPicture("driver/example/trees.png")
 	if err != nil {
 		panic(err)
 	}
@@ -80,10 +85,12 @@ func Run() {
 	}
 	var planted []Planted
 
+	spriteCanvas := pixelgl.NewCanvas(win.Bounds())
+
 	var uTime, uSpeed float32 = 0.0, 5.0
-	win.Canvas().SetUniform("uTime", &uTime)
-	win.Canvas().SetUniform("uSpeed", &uSpeed)
-	win.Canvas().SetFragmentShader(fragmentShader)
+	spriteCanvas.SetUniform("uTime", &uTime)
+	spriteCanvas.SetUniform("uSpeed", &uSpeed)
+	spriteCanvas.SetFragmentShader(fragmentShader)
 
 	cameraPos := pixel.ZV
 	cameraSpeed := 500.0
@@ -131,7 +138,7 @@ func Run() {
 		camera := pixel.IM.
 			Scaled(cameraPos, cameraZoom).
 			Moved(win.Bounds().Center().Sub(cameraPos))
-		win.SetMatrix(camera)
+		spriteCanvas.SetMatrix(camera)
 
 		if win.Pressed(pixelgl.MouseButtonLeft) && time.Since(lastDraw).Seconds() > 0.05 {
 			lastDraw = last
@@ -144,12 +151,14 @@ func Run() {
 		}
 
 		win.Clear(colornames.Forestgreen)
+		spriteCanvas.Clear(style.Transparent)
 
 		sheetBatch.Clear()
 		for _, tree := range planted {
 			tree.sprite.Draw(sheetBatch, tree.transform)
 		}
-		sheetBatch.Draw(win)
+		sheetBatch.Draw(spriteCanvas)
+		spriteCanvas.Draw(win, pixel.IM.Moved(win.Bounds().Center()))
 
 		//txt.WriteString(win.Typed())
 		typeShadowed(txt, win.Typed())
@@ -157,7 +166,7 @@ func Run() {
 			typeShadowed(txt, ".\n")
 			//txt.WriteString(".\n")
 		}
-		txt.Draw(win, pixel.IM)
+		txt.Draw(win, camera)
 
 		win.Update()
 

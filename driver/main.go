@@ -1,12 +1,12 @@
 package main
 
 import (
-	"combat/driver/game"
-	"combat/driver/game/states/battle"
+	"found-relics/driver/game"
+	"found-relics/driver/game/states/initialize"
 	"github.com/faiface/pixel/pixelgl"
 )
 
 func main() {
-	g := game.NewGame(battle.NewExampleBattles())
+	g := game.NewGame(initialize.New())
 	pixelgl.Run(g.Run)
 }

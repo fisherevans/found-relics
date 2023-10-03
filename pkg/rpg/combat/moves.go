@@ -1,5 +1,7 @@
 package combat
 
+import "found-relics/pkg/assets"
+
 const BeatToTimeScale = 1000
 
 type Beats int
@@ -24,6 +26,7 @@ func (t Time) ToBeatRoundedUp() Beats {
 
 type Move struct {
 	Name     string
+	Sprite   assets.SpriteReference
 	Duration Beats
 
 	Ticks []Time
@@ -40,10 +43,14 @@ type AvailableMoves struct {
 	Slot4 *Move
 }
 
+func (a AvailableMoves) AsSlice() []*Move {
+	return []*Move{a.Slot1, a.Slot2, a.Slot3, a.Slot4}
+}
+
 type MoveInstance struct {
 	Move        *Move
-	Source      *CharacterInstance
-	Target      *CharacterInstance
+	Source      *BattleCharacter
+	Target      *BattleCharacter
 	ElapsedTime Time
 }
 

@@ -9,7 +9,8 @@ import (
 )
 
 var ColorHealth = hex("#f94e6b")
-var ColorHealthBg = hex("#793641")
+var ColorHealthLag = hex("#ff96e6")
+var ColorHealthBg = hex("#522c32")
 
 var ColorHighlightBright = hsl(211, 0.9, 0.75, 1)
 var ColorHighlightDark = hsl(211, 0.9, 0.65, 1)

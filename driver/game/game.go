@@ -1,12 +1,15 @@
 package game
 
 import (
+	"found-relics/pkg/assets"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"time"
 )
 
 type Game struct {
+	Resources assets.Resources
+
 	currentState            State
 	currentStateInitialized bool
 }

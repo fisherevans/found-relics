@@ -1,9 +1,9 @@
 package main
 
 import (
-	"combat/driver/game"
-	"combat/pkg/style"
 	"fmt"
+	"found-relics/driver/game"
+	"found-relics/pkg/style"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 )

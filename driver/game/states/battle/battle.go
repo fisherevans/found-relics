@@ -1,11 +1,11 @@
 package battle
 
 import (
-	"combat/driver/game"
-	"combat/pkg/gfxutil"
-	"combat/pkg/rpg/combat"
-	"combat/pkg/style"
 	"fmt"
+	"found-relics/driver/game"
+	"found-relics/pkg/gfxutil"
+	"found-relics/pkg/rpg/combat"
+	"found-relics/pkg/style"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/faiface/pixel/text"
@@ -54,7 +54,7 @@ func (s *State) Init(game *game.Game, win *pixelgl.Window) {
 		panic(err)
 	}
 
-	s.characterRenderer = NewCharacterRenderer(atlasSmall, atlasMedium, atlasLarge)
+	s.characterRenderer = NewCharacterRenderer(game, atlasSmall, atlasMedium, atlasLarge)
 	s.characterRendererCanvas = pixelgl.NewCanvas(win.Bounds())
 
 	s.debugTxt = text.New(pixel.V(0, 0), atlas16)
@@ -107,7 +107,7 @@ func realTimeToCombatTime(t time.Time) combat.Time {
 	return combat.Time(t.UnixMilli())
 }
 
-func RenderCharacter(txt *text.Text, character *combat.CharacterInstance) {
+func RenderCharacter(txt *text.Text, character *combat.BattleCharacter) {
 	txt.WriteString(character.Details.Name + "\n")
 	txt.WriteString(fmt.Sprintf("HP: %4d / %-4d\n\n", character.Life, character.Details.MaxLife))
 	for _, m := range character.MoveQueue {

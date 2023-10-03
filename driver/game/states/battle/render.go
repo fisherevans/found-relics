@@ -1,10 +1,11 @@
 package battle
 
 import (
-	"combat/pkg/gfxutil"
-	"combat/pkg/rpg/combat"
-	"combat/pkg/style"
 	"fmt"
+	"found-relics/driver/game"
+	"found-relics/pkg/gfxutil"
+	"found-relics/pkg/rpg/combat"
+	"found-relics/pkg/style"
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/imdraw"
 	"github.com/faiface/pixel/text"
@@ -12,6 +13,8 @@ import (
 )
 
 type CharacterRenderer struct {
+	game *game.Game
+
 	imd       *imdraw.IMDraw
 	txtSmall  *text.Text
 	txtMedium *text.Text
@@ -33,15 +36,20 @@ type CharacterRenderer struct {
 	queueBoxPadding float64
 	queueBoxBorder  float64
 
-	beateDividerWidth float64
+	beatDividerWidth float64
+
+	slotSize   float64
+	slotMargin float64
 
 	textShadow pixel.Vec
 
 	time float64
 }
 
-func NewCharacterRenderer(atlasSmall, atlasMedium, atlasLarge *text.Atlas) *CharacterRenderer {
+func NewCharacterRenderer(game *game.Game, atlasSmall, atlasMedium, atlasLarge *text.Atlas) *CharacterRenderer {
 	cr := &CharacterRenderer{
+		game: game,
+
 		imd:       imdraw.New(nil),
 		txtSmall:  text.New(pixel.ZV, atlasSmall),
 		txtMedium: text.New(pixel.ZV, atlasMedium),
@@ -59,7 +67,10 @@ func NewCharacterRenderer(atlasSmall, atlasMedium, atlasLarge *text.Atlas) *Char
 		queueBoxPadding: 4,
 		queueBoxBorder:  4,
 
-		beateDividerWidth: 1,
+		beatDividerWidth: 1,
+
+		slotSize:   50,
+		slotMargin: 4,
 
 		textShadow: pixel.V(2, -2),
 	}
@@ -74,8 +85,10 @@ func NewCharacterRenderer(atlasSmall, atlasMedium, atlasLarge *text.Atlas) *Char
 }
 
 type RenderCtx struct {
-	maxY float64
-	maxX float64
+	target pixel.Target
+	matrix pixel.Matrix
+	maxY   float64
+	maxX   float64
 }
 
 func (ctx *RenderCtx) TrackMaxX(x float64) {
@@ -86,30 +99,35 @@ func (cr *CharacterRenderer) Update(dt float64) {
 	cr.time += dt
 }
 
-func (cr *CharacterRenderer) Render(target pixel.Target, pos pixel.Vec, chars []*combat.CharacterInstance, selectedCid int) pixel.Vec {
+func (cr *CharacterRenderer) Render(target pixel.Target, pos pixel.Vec, chars []*combat.BattleCharacter, selectedCid int) pixel.Vec {
 	cr.imd.Clear()
 	cr.txtLarge.Clear()
 	cr.txtSmall.Clear()
 
-	ctx := &RenderCtx{}
+	ctx := &RenderCtx{
+		target: target,
+		matrix: pixel.IM.Moved(pos),
+	}
 
 	for cid := len(chars) - 1; cid >= 0; cid -= 1 {
 		char := chars[cid]
 		isSelected := cid == selectedCid
+
+		cr.renderSlots(ctx, char)
+
 		cr.renderMoveQueue(ctx, char, isSelected)
 		ctx.maxY += cr.padding
 
-		cr.renderBar(ctx, char.Life, char.Details.MaxLife, "HP", cr.healthWidthScale, style.ColorHealth, style.ColorHealthBg)
+		cr.renderBar(ctx, char.Life, char.LagLife, char.Details.MaxLife, "HP", cr.healthWidthScale, style.ColorHealth, style.ColorHealthLag, style.ColorHealthBg)
 		ctx.maxY += cr.padding * 2
 
 		cr.renderName(ctx, char.Details.Name, isSelected)
 	}
 
-	moved := pixel.IM.Moved(pos)
-	cr.imd.SetMatrix(moved)
+	cr.imd.SetMatrix(ctx.matrix)
 	cr.imd.Draw(target)
-	cr.txtLarge.Draw(target, moved)
-	cr.txtSmall.Draw(target, moved)
+	cr.txtLarge.Draw(target, ctx.matrix)
+	cr.txtSmall.Draw(target, ctx.matrix)
 
 	return pixel.V(ctx.maxX, ctx.maxY)
 }
@@ -125,12 +143,13 @@ func (cr *CharacterRenderer) renderName(ctx *RenderCtx, name string, selected bo
 	ctx.TrackMaxX(cr.txtLarge.Dot.X)
 }
 
-func (cr *CharacterRenderer) renderBar(ctx *RenderCtx, current, max int, label string, widthScale float64, colorFg, colorBg pixel.RGBA) {
+func (cr *CharacterRenderer) renderBar(ctx *RenderCtx, current, lag, max int, label string, widthScale float64, colorFg, colorLag, colorBg pixel.RGBA) {
 	v := func(x, y float64) pixel.Vec {
 		return pixel.V(x+cr.barBorderThickness, y+cr.barBorderThickness+ctx.maxY)
 	}
 	barWidth := float64(max) * widthScale
-	healthWidth := float64(current) / float64(max) * barWidth
+	currentWidth := float64(current) / float64(max) * barWidth
+	lagWidth := float64(lag) / float64(max) * barWidth
 
 	cr.imd.Color = style.ColorDark1
 	cr.imd.EndShape = imdraw.RoundEndShape
@@ -152,9 +171,16 @@ func (cr *CharacterRenderer) renderBar(ctx *RenderCtx, current, max int, label s
 	cr.imd.Color = colorBg
 	cr.imd.Push(v(0, cr.healthHeight/2), v(barWidth, cr.healthHeight/2))
 	cr.imd.Line(cr.healthHeight)
+
 	cr.imd.Color = colorFg
-	cr.imd.Push(v(0, cr.healthHeight/2), v(healthWidth, cr.healthHeight/2))
+	cr.imd.Push(v(0, cr.healthHeight/2), v(currentWidth, cr.healthHeight/2))
 	cr.imd.Line(cr.healthHeight)
+
+	if lag >= 0 {
+		cr.imd.Color = colorLag
+		cr.imd.Push(v(currentWidth, cr.healthHeight/2), v(lagWidth, cr.healthHeight/2))
+		cr.imd.Line(cr.healthHeight)
+	}
 
 	cr.txtSmall.Dot = v(barWidth+cr.barBorderThickness*2+cr.padding, 0)
 	cr.textShadowed(cr.txtSmall, fmt.Sprintf("%d", current), style.ColorBright1)
@@ -164,7 +190,7 @@ func (cr *CharacterRenderer) renderBar(ctx *RenderCtx, current, max int, label s
 	ctx.TrackMaxX(cr.txtSmall.Dot.X)
 }
 
-func (cr *CharacterRenderer) renderMoveQueue(ctx *RenderCtx, char *combat.CharacterInstance, selected bool) {
+func (cr *CharacterRenderer) renderMoveQueue(ctx *RenderCtx, char *combat.BattleCharacter, selected bool) {
 	v := func(x, y float64) pixel.Vec {
 		return pixel.V(x, y+ctx.maxY)
 	}
@@ -200,10 +226,10 @@ func (cr *CharacterRenderer) renderMoveQueue(ctx *RenderCtx, char *combat.Charac
 		}
 		gfxutil.RectShape{
 			Bounds: gfxutil.Box(
-				v(bx, cr.queueBoxBorder+cr.beateDividerWidth),
+				v(bx, cr.queueBoxBorder+cr.beatDividerWidth),
 				0, queueBox.H()-cr.queueBoxBorder/2.0),
 			StrokePosition: gfxutil.StrokeOuter,
-			StrokeWidth:    cr.beateDividerWidth,
+			StrokeWidth:    cr.beatDividerWidth,
 			StrokeColor:    style.ColorDark3,
 			StrokeShape:    imdraw.NoEndShape,
 		}.Draw(cr.imd)
@@ -275,6 +301,20 @@ func (cr *CharacterRenderer) renderMoveQueue(ctx *RenderCtx, char *combat.Charac
 	}
 	ctx.maxY += queueBox.H() + cr.queueBoxBorder*2
 	ctx.TrackMaxX(cr.txtSmall.Dot.X)
+}
+
+func (cr *CharacterRenderer) renderSlots(ctx *RenderCtx, char *combat.BattleCharacter) {
+	for i, move := range char.Details.Moves.AsSlice() {
+		if move == nil {
+			continue
+		}
+		s := move.Sprite(cr.game.Resources)
+		s.Draw(ctx.target, pixel.IM.
+			ScaledXY(pixel.ZV, pixel.V(cr.slotSize/s.Frame().W(), cr.slotSize/s.Frame().H())).
+			Moved(pixel.V(float64(i)*(cr.slotSize+cr.slotMargin*2.0), ctx.maxY)).
+			Moved(pixel.V(cr.slotSize/2, cr.slotSize/2)))
+	}
+	ctx.maxY += cr.slotSize + cr.slotMargin*2.0
 }
 
 func (cr *CharacterRenderer) flashSelected(a, b pixel.RGBA) pixel.RGBA {

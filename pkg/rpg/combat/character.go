@@ -1,58 +1,47 @@
 package combat
 
 import (
-	"fmt"
+	"math"
 )
 
-type CharacterDetails struct {
-	Name              string
-	Moves             AvailableMoves
-	MaxMoveQueueDepth Beats
-	MaxLife           int
-}
+const healthLagPctPerBeat = 0.05
 
-type CharacterInstance struct {
-	Details CharacterDetails
+type BattleCharacter struct {
+	Details Character
 	Life    int
+	LagLife int
 
 	MoveQueue          []*MoveInstance
 	MoveQueueTimeDepth Time
+
+	Events []Event
 }
 
-func (c *CharacterInstance) Heal(amt int) {
-	c.Life = c.Life + amt
-	if c.Life > c.Details.MaxLife {
-		c.Life = c.Details.MaxLife
+func (c *BattleCharacter) Progress(toElapse Time, triggers *ElapsedTriggers) {
+	// lag health
+	if c.Life != c.LagLife {
+		dt := float64(toElapse) / float64(BeatToTimeScale)
+		lagStep := int(math.Ceil(healthLagPctPerBeat * dt * float64(c.Details.MaxLife)))
+		if c.LagLife > c.Life {
+			lagStep = -1 * lagStep
+		}
+		//fmt.Printf("life: %4d, lag:%4d, dt: %.4f, step:%4d\n", c.Life, c.LagLife, dt, lagStep)
+		if absInt(lagStep) > absInt(c.LagLife-c.Life) {
+			c.LagLife = c.Life
+		} else {
+			c.LagLife += lagStep
+		}
 	}
-}
 
-func (c *CharacterInstance) Damage(amt int) {
-	c.Life = c.Life - amt
-	if c.Life < 0 {
-		c.Life = 0
-	}
-}
-
-func (c *CharacterInstance) QueueMove(move *Move, target *CharacterInstance) {
-	mi := &MoveInstance{
-		Move:   move,
-		Source: c,
-		Target: target,
-	}
-	c.MoveQueue = append(c.MoveQueue, mi)
-	c.MoveQueueTimeDepth += mi.Move.Duration.ToCombatTime()
-	fmt.Printf("move '%s' queued for '%s'\n", move.Name, c.Details.Name)
-}
-
-func (c *CharacterInstance) Progress(toElapse Time, triggers *ElapsedTriggers) {
+	// queue move triggers
 	var pastElapsed Time = 0
 	for len(c.MoveQueue) > 0 && toElapse > 0 {
 		m := c.MoveQueue[0]
 		if m.ElapsedTime == 0 {
 			triggers.Append(&TriggerNode{
-				Order:    int(pastElapsed),
-				Instance: m,
-				Trigger:  m.Move.StartTrigger,
+				RelativeAt: pastElapsed,
+				Instance:   m,
+				Trigger:    m.Move.StartTrigger,
 			})
 		}
 		start := m.ElapsedTime
@@ -62,22 +51,37 @@ func (c *CharacterInstance) Progress(toElapse Time, triggers *ElapsedTriggers) {
 		for _, tick := range m.Move.Ticks {
 			if tick > start && tick <= end {
 				triggers.Append(&TriggerNode{
-					Order:    int(pastElapsed + tick - start),
-					Instance: m,
-					Trigger:  m.Move.TickTrigger,
+					RelativeAt: pastElapsed + tick - start,
+					Instance:   m,
+					Trigger:    m.Move.TickTrigger,
 				})
 			}
 		}
 		if m.ElapsedTime >= m.Move.Duration.ToCombatTime() {
 			triggers.Append(&TriggerNode{
-				Order:    int(pastElapsed + m.Move.Duration.ToCombatTime()),
-				Instance: m,
-				Trigger:  m.Move.EndTrigger,
+				RelativeAt: pastElapsed + m.Move.Duration.ToCombatTime(),
+				Instance:   m,
+				Trigger:    m.Move.EndTrigger,
 			})
 			c.MoveQueue = c.MoveQueue[1:]
 		}
 		c.MoveQueueTimeDepth -= thisElapsed
 		pastElapsed += thisElapsed
 		toElapse -= thisElapsed
+	}
+}
+
+type Character struct {
+	Name              string
+	Moves             AvailableMoves
+	MaxMoveQueueDepth Beats
+	MaxLife           int
+}
+
+func (c Character) NewBattleCharacter() *BattleCharacter {
+	return &BattleCharacter{
+		Details: c,
+		Life:    c.MaxLife,
+		LagLife: c.MaxLife,
 	}
 }
