@@ -79,7 +79,7 @@ func LoadPicture(path string) (pixel.Picture, error) {
 func GetSprite(sheet pixel.Picture, size, row, col int) *pixel.Sprite {
 	bx := sheet.Bounds().Min.X + float64((col-1)*size)
 	by := sheet.Bounds().Max.Y - float64(row*size)
-	//fmt.Printf("size: %d, r:%d, c:%d, bx: %f, by:%f -- min:%s\n", size, row, col, bx, by, sheet.Bounds().Min.String())
+	//fmt.Printf("size: %d, r:%d, c:%d, bx: %f, by:%f -- min:%s\n", size, row, col, bx, by, sheet.Bounds().Min.Text())
 	bounds := pixel.R(bx, by, bx+float64(size), by+float64(size))
 	return pixel.NewSprite(sheet, bounds)
 }

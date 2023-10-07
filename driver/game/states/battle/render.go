@@ -272,7 +272,7 @@ func (cr *CharacterRenderer) renderMoveQueue(ctx *RenderCtx, char *combat.Battle
 				fillColor = style.Flash(fillColor, style.ColorPurpleDark, transitionPct, 0.5)
 				borderColor = style.Flash(borderColor, style.ColorPurpleBright, transitionPct, 0.5)
 				borderThickness = borderThickness + borderThickness*transitionPct*2.0
-				// text
+				// drawtext.go
 				textDx = -1.0 * transitionPct * cr.currentMoveInnerWidth
 				nameColor = style.Flash(nameColor, style.ColorBright1, transitionPct, 0.5)
 			}

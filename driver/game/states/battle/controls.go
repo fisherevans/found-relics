@@ -11,7 +11,7 @@ type PlayerControls struct {
 }
 
 func (p *PlayerControls) Update(win *pixelgl.Window, battle *combat.Battle) {
-	// select player
+	// selector player
 	count := len(battle.PlayerTeam)
 	if win.JustPressed(pixelgl.KeyDown) || win.JustPressed(pixelgl.KeyS) {
 		p.selected = (p.selected + 1) % count
