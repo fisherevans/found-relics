@@ -2,39 +2,47 @@ package main
 
 import (
 	"fmt"
-	"found-relics/driver/game"
 	"found-relics/pkg/style"
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/pixelgl"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/lucasb-eyer/go-colorful"
+	"log"
 )
 
 func main() {
-	pixelgl.Run(game.NewGame(&Test{
+	ebiten.SetWindowSize(1280, 720)
+	ebiten.SetWindowTitle("Color Flash")
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+	t := &Test{
 		A:    style.ColorHighlightBright,
 		B:    style.ColorHighlightDark,
 		Rate: 1,
-	}).Run)
+	}
+	fmt.Printf("A = r:%.3f, g:%.3f, b:%.3f\n", t.A.R, t.A.G, t.A.B)
+	fmt.Printf("B = r:%.3f, g:%.3f, b:%.3f\n", t.B.R, t.B.G, t.B.B)
+	if err := ebiten.RunGame(t); err != nil {
+		log.Fatal(err)
+	}
 }
 
 type Test struct {
-	A    pixel.RGBA
-	B    pixel.RGBA
+	A    colorful.Color
+	B    colorful.Color
 	Rate float64
 	Time float64
 }
 
-func (t *Test) Init(game *game.Game, win *pixelgl.Window) {
-	fmt.Printf("A = r:%.3f, g:%.3f, b:%.3f\n", t.A.R, t.A.G, t.A.B)
-	fmt.Printf("B = r:%.3f, g:%.3f, b:%.3f\n", t.B.R, t.B.G, t.B.B)
+func (t *Test) Update() error {
+	t.Time += 1.0 / ebiten.ActualTPS()
+	return nil
 }
 
-func (t *Test) Tick(game *game.Game, win *pixelgl.Window, dt float64) {
-	t.Time += dt
+func (t *Test) Draw(screen *ebiten.Image) {
 	c := style.Flash(t.A, t.B, t.Time, t.Rate)
-	win.Clear(c)
-	if t.Time < 3 {
-		fmt.Printf("%3.3f - ", t.Time)
-		fmt.Printf("r:%.3f, g:%.3f, b:%.3f\n", c.R, c.G, c.B)
-	}
+	ebitenutil.DrawRect(screen, 10, 10, 200, 200, c)
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("time:%3.3f\nr:%.3f, g:%.3f, b:%.3f\n", t.Time, c.R, c.G, c.B))
+}
 
+func (t *Test) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+	return outsideWidth, outsideHeight
 }

@@ -1,6 +1,8 @@
 package combat
 
-import "found-relics/pkg/assets"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 const BeatToTimeScale = 1000
 
@@ -24,9 +26,11 @@ func (t Time) ToBeatRoundedUp() Beats {
 	return quot
 }
 
+type MoveId string
+
 type Move struct {
-	Name     string
-	Sprite   assets.SpriteReference
+	Name     MoveId
+	Sprite   *ebiten.Image
 	Duration Beats
 
 	Ticks []Time
@@ -37,14 +41,14 @@ type Move struct {
 }
 
 type AvailableMoves struct {
-	Slot1 *Move
-	Slot2 *Move
-	Slot3 *Move
-	Slot4 *Move
+	Slot1 MoveId
+	Slot2 MoveId
+	Slot3 MoveId
+	Slot4 MoveId
 }
 
-func (a AvailableMoves) AsSlice() []*Move {
-	return []*Move{a.Slot1, a.Slot2, a.Slot3, a.Slot4}
+func (a AvailableMoves) AsSlice() []MoveId {
+	return []MoveId{a.Slot1, a.Slot2, a.Slot3, a.Slot4}
 }
 
 type MoveInstance struct {
