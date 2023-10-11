@@ -9,6 +9,7 @@ import (
 type FoundRelics struct {
 	currentState state.State
 	lastTime     time.Time
+	controller   state.Controller
 }
 
 func (g *FoundRelics) Update() error {
@@ -28,6 +29,6 @@ func (g *FoundRelics) Draw(screen *ebiten.Image) {
 
 func (g *FoundRelics) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	s := ebiten.DeviceScaleFactor()
-	s = 1
+	//s = 1
 	return int(float64(outsideWidth) * s), int(float64(outsideHeight) * s)
 }

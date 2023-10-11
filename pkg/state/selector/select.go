@@ -10,7 +10,6 @@ import (
 	"found-relics/pkg/testdata"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/colornames"
 	"image/color"
@@ -44,16 +43,16 @@ func NewExampleBattles() *SelectState {
 }
 
 func (s *SelectState) Update(game state.Game, dt float64) {
-	if inpututil.IsKeyJustPressed(ebiten.KeyW) || inpututil.IsKeyJustPressed(ebiten.KeyUp) {
+	if game.Controller().JustPressed(state.InputUp) {
 		s.Selected = (len(s.Options) + s.Selected - 1) % len(s.Options)
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyS) || inpututil.IsKeyJustPressed(ebiten.KeyDown) {
+	if game.Controller().JustPressed(state.InputDown) {
 		s.Selected = (s.Selected + 1) % len(s.Options)
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+	if game.Controller().JustPressed(state.InputAliasSelect) {
 		game.EnterBattle(s.Options[s.Selected].Factory())
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+	if game.Controller().JustPressed(state.InputMenu) {
 		os.Exit(0)
 	}
 }

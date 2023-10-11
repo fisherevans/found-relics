@@ -2,6 +2,7 @@ package game
 
 import (
 	"found-relics/assets"
+	"found-relics/pkg/controller"
 	"found-relics/pkg/state"
 	"found-relics/pkg/testdata"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,6 +17,7 @@ func Start() {
 	state := &InitState{}
 	g := &FoundRelics{
 		currentState: state,
+		controller:   controller.FromEbiten(),
 	}
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)

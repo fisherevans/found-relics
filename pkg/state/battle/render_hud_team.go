@@ -65,7 +65,7 @@ func NewHudRenderer() *HudRenderer {
 
 		queueBoxBorder: 6,
 
-		moveSlotSize:   50,
+		moveSlotSize:   75,
 		moveSlotBorder: 4,
 
 		beatDividerWidth: 1,
@@ -313,6 +313,10 @@ func (h *HudRenderCtx) RenderMoveQueue(char *combat.BattleCharacter, isSelected 
 
 func (h *HudRenderCtx) RenderMoveSlots(char *combat.BattleCharacter, selected bool) {
 	canvas := gg.NewContext(int(h.cfg.moveSlotSize*8), int(h.cfg.moveSlotSize+h.cfg.moveSlotBorder*2))
+	textDrawer := drawutil.NewTextDrawer(h.cfg.faceBarNumber, h.bounds.Min.X+int(h.cfg.moveSlotSize/2.0), h.bounds.Max.Y+int(h.cfg.moveSlotSize), style.ColorBright1).
+		Bounded(int(h.cfg.moveSlotSize), h.cfg.faceBarNumber.Metrics().Height.Round(), drawutil.AlignCenter, drawutil.AlignBottom)
+
+	remainingQueue := char.Details.MaxMoveQueueDepth.ToCombatTime() - char.MoveQueueTimeDepth
 	for i, moveId := range char.Details.Moves.AsSlice() {
 		if moveId == moves.None {
 			continue
@@ -329,11 +333,22 @@ func (h *HudRenderCtx) RenderMoveSlots(char *combat.BattleCharacter, selected bo
 		drawutil.NewStrokedRectangle(x, y, h.cfg.moveSlotSize, h.cfg.moveSlotSize).
 			Stroked(h.cfg.moveSlotBorder, drawutil.StrokeOutside).
 			Draw(canvas)
-		canvas.SetColor(style.ColorPurpleBright)
-		canvas.Stroke()
+
+		if move.Duration.ToCombatTime() > remainingQueue {
+			canvas.SetColor(style.Transparent(style.ColorGray, 0.5))
+			canvas.FillPreserve()
+			canvas.SetColor(style.ColorDark3)
+		} else {
+			canvas.SetColor(style.ColorBright2)
+		}
+		canvas.StrokePreserve()
+		canvas.ClearPath()
+
+		textDrawer.Draw(fmt.Sprintf("%d", i+1), h.target)
+		textDrawer.Move(int(h.cfg.moveSlotSize*2), 0)
 	}
 	barImgOpt := &ebiten.DrawImageOptions{}
 	barImgOpt.GeoM.Translate(float64(h.bounds.Min.X), float64(h.bounds.Max.Y))
 	h.target.DrawImage(ebiten.NewImageFromImage(canvas.Image()), barImgOpt)
-	h.bounds = h.bounds.Union(drawutil.NewSizedRect(h.bounds.Min.X, h.bounds.Max.Y, canvas.Width(), canvas.Height()))
+	h.bounds = h.bounds.Union(drawutil.NewSizedRect(h.bounds.Min.X, h.bounds.Max.Y, canvas.Width(), canvas.Height()+h.cfg.faceBarNumber.Metrics().Height.Round()))
 }

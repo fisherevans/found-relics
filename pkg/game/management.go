@@ -19,3 +19,7 @@ func (g *FoundRelics) EnterSelector() {
 func (g *FoundRelics) EnterState(newState state.State) {
 	g.currentState = newState
 }
+
+func (g *FoundRelics) Controller() state.Controller {
+	return g.controller
+}

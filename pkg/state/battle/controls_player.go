@@ -4,8 +4,6 @@ import (
 	"found-relics/pkg/rpg/combat"
 	"found-relics/pkg/rpg/combat/moves"
 	"found-relics/pkg/state"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"math/rand"
 )
 
@@ -16,25 +14,25 @@ type PlayerController struct {
 func (c *PlayerController) Update(game state.Game, battle *combat.Battle, dt float64, elapsed combat.Time) {
 	// selector player
 	count := len(battle.PlayerTeam)
-	if inpututil.IsKeyJustPressed(ebiten.KeyDown) || inpututil.IsKeyJustPressed(ebiten.KeyS) {
+	if game.Controller().JustPressed(state.InputDown) {
 		c.selected = (c.selected + 1) % count
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyUp) || inpututil.IsKeyJustPressed(ebiten.KeyW) {
+	if game.Controller().JustPressed(state.InputUp) {
 		c.selected = (count + c.selected - 1) % count
 	}
 	// queue moves
 	char := battle.PlayerTeam[c.selected]
 	var triggered []*combat.Move
-	if inpututil.IsKeyJustPressed(ebiten.Key1) {
+	if game.Controller().JustPressed(state.InputOpt1) {
 		triggered = append(triggered, moves.Get(char.Details.Moves.Slot1))
 	}
-	if inpututil.IsKeyJustPressed(ebiten.Key2) {
+	if game.Controller().JustPressed(state.InputOpt2) {
 		triggered = append(triggered, moves.Get(char.Details.Moves.Slot2))
 	}
-	if inpututil.IsKeyJustPressed(ebiten.Key3) {
+	if game.Controller().JustPressed(state.InputOpt3) {
 		triggered = append(triggered, moves.Get(char.Details.Moves.Slot3))
 	}
-	if inpututil.IsKeyJustPressed(ebiten.Key4) {
+	if game.Controller().JustPressed(state.InputOpt4) {
 		triggered = append(triggered, moves.Get(char.Details.Moves.Slot4))
 	}
 	for _, move := range triggered {
@@ -43,5 +41,8 @@ func (c *PlayerController) Update(game state.Game, battle *combat.Battle, dt flo
 		}
 		targetId := rand.Intn(len(battle.OpponentTeam))
 		battle.QueueMove(move, char, battle.OpponentTeam[targetId]) // TODO targeting
+	}
+	if game.Controller().JustPressed(state.InputBack) {
+		battle.DequeueLastMove(char)
 	}
 }

@@ -2,13 +2,11 @@ package battle
 
 import (
 	"fmt"
-	assets2 "found-relics/assets"
+	"found-relics/assets"
 	"found-relics/pkg/drawutil"
 	"found-relics/pkg/rpg/combat"
 	"found-relics/pkg/state"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"golang.org/x/image/colornames"
 	"image/color"
 	"math"
@@ -54,13 +52,13 @@ func (s *State) Update(game state.Game, dt float64) {
 	s.opponentController.Update(game, s.battle, dt, elapsed)
 	s.hudRenderer.Update(game, s.battle, dt, elapsed)
 
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+	if game.Controller().JustPressed(state.InputMenu) {
 		game.EnterSelector()
 	}
 }
 
 func (s *State) Draw(game state.Game, screen *ebiten.Image) {
-	bgImg := assets2.Images.TempBattleBackground
+	bgImg := assets.Images.TempBattleBackground
 	bgOpt := &ebiten.DrawImageOptions{}
 	scale := math.Max(float64(screen.Bounds().Dx())/float64(bgImg.Bounds().Dx()), float64(screen.Bounds().Dy())/float64(bgImg.Bounds().Dy()))
 	bgOpt.GeoM.Scale(scale, scale)
@@ -72,23 +70,22 @@ func (s *State) Draw(game state.Game, screen *ebiten.Image) {
 }
 
 func (s *State) debugSummary(screen *ebiten.Image) {
-	text := drawutil.NewTextDrawer(assets2.Fonts.TextMedium.Regular, 100, 700, color.White).
-		Shadowed(2, 2, colornames.Gray)
-	for i, c := range s.battle.PlayerTeam {
-		text.Color(colornames.White)
-		if s.playController.selected == i {
-			text.Color(colornames.Cyan)
-		}
-		text.Draw(summarizeCharacter(c), screen)
-		text.Move(700, 120)
+	text := drawutil.NewTextDrawer(assets.Fonts.TextSmall.Regular, screen.Bounds().Dx()-400, 20, color.White).
+		Shadowed(1, 1, colornames.Black)
+	render := func(char *combat.BattleCharacter, color color.Color) {
+		text.Color(color)
+		b := text.Draw(summarizeCharacter(char), screen)
+		text.Move(0, b.Dy())
 	}
+	//for i, c := range s.battle.PlayerTeam {
+	//	if s.playController.selected == i {
+	//		render(c, colornames.Cyan)
+	//	} else {
+	//		render(c, colornames.White)
+	//	}
+	//}
 	for _, c := range s.battle.OpponentTeam {
-		ebitenutil.DrawRect(screen, float64(text.X), float64(text.Y), 100, 100, color.RGBA{100, 0, 100, 100})
-		text.Color(colornames.Red)
-		text.Bounded(100, 100, drawutil.AlignRight, drawutil.AlignBottom)
-		b := text.Draw(summarizeCharacter(c), screen)
-		text.Move(700, 120)
-		ebitenutil.DrawRect(screen, float64(b.Min.X), float64(b.Min.Y), float64(b.Dx()), float64(b.Dy()), color.RGBA{0, 100, 100, 100})
+		render(c, colornames.Pink)
 	}
 }
 

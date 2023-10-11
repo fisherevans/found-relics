@@ -49,6 +49,17 @@ func (b *Battle) QueueMove(move *Move, source, target *BattleCharacter) {
 	fmt.Printf("move '%s' queued for '%s'\n", move.Name, source.Details.Name)
 }
 
+func (b *Battle) DequeueLastMove(char *BattleCharacter) bool {
+	l := len(char.MoveQueue)
+	if l < 2 {
+		return false
+	}
+	move := char.MoveQueue[l-1]
+	char.MoveQueue = char.MoveQueue[:l-1]
+	char.MoveQueueTimeDepth -= move.Move.Duration.ToCombatTime()
+	return true
+}
+
 func minInt(a, b int) int {
 	if a < b {
 		return a
