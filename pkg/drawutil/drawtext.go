@@ -50,6 +50,7 @@ type TextDrawer struct {
 	shadowDx    int
 	shadowDy    int
 	shadowColor color.Color
+	boundShadow bool
 
 	bounded             bool
 	boundWidth          int
@@ -74,6 +75,11 @@ func (t *TextDrawer) Shadowed(dx, dy int, shadowColor color.Color) *TextDrawer {
 	t.shadowDx = dx
 	t.shadowDy = dy
 	t.shadowColor = shadowColor
+	return t
+}
+
+func (t *TextDrawer) BoundShadow(do bool) *TextDrawer {
+	t.boundShadow = do
 	return t
 }
 
@@ -260,9 +266,10 @@ func (t *TextDrawer) BoundsOf(txt string) image.Rectangle {
 		height = len(lines) * lineH
 	}
 
-	bounds := image.Rectangle{
-		Min: image.Point{X: t.X, Y: t.Y},
-		Max: image.Point{X: t.X + width + t.shadowDx, Y: t.Y + height + t.shadowDy},
+	bounds := NewSizedRect(t.X, t.Y, width, height)
+	if t.boundShadow {
+		bounds.Max.X += t.shadowDx
+		bounds.Max.Y += t.shadowDy
 	}
 	return bounds
 }

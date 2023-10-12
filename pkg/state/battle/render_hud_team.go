@@ -12,18 +12,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/lucasb-eyer/go-colorful"
 	"golang.org/x/image/colornames"
-	"golang.org/x/image/font"
 	"image"
-	"image/color"
 	"math"
 	"strings"
 )
 
 type HudRenderer struct {
-	faceName      font.Face
-	faceMoveQueue font.Face
-	faceBarNumber font.Face
-
 	padding int
 
 	barBorderWidth      int
@@ -49,31 +43,25 @@ type HudRenderer struct {
 
 func NewHudRenderer() *HudRenderer {
 	cr := &HudRenderer{
-		faceName:      assets.Fonts.TitleTiny,
-		faceMoveQueue: assets.Fonts.TextSmall.Bold,
-		faceBarNumber: assets.Fonts.NumbersSmall,
+		padding: 4,
 
-		padding: 12,
+		barBorderWidth:        2,
+		barHealthWidthScale:   0.05,
+		currentMoveInnerWidth: 80,
 
-		barBorderWidth:      4,
-		barHealthWidthScale: 0.2,
+		moveWidthScale: 0.02,
+		moveMargin:     3,
+		moveBorder:     2,
+		movePadding:    1,
 
-		moveWidthScale: 0.075,
-		moveMargin:     6,
-		moveBorder:     4,
-		movePadding:    4,
+		queueBoxBorder: 2,
 
-		queueBoxBorder: 6,
-
-		moveSlotSize:   75,
-		moveSlotBorder: 4,
+		moveSlotSize:   25,
+		moveSlotBorder: 2,
 
 		beatDividerWidth: 1,
 	}
-	mqd := drawutil.NewTextDrawer(cr.faceMoveQueue, 0, 0, color.Black)
-	largeMoveBounds := mqd.BoundsOf("Some Long Move!!!")
-	cr.currentMoveInnerWidth = float64(largeMoveBounds.Dx())
-	cr.moveTextHeight = float64(cr.faceMoveQueue.Metrics().CapHeight.Ceil()) + cr.movePadding*2
+	cr.moveTextHeight = float64(assets.Fonts.TextSmall.Metrics().CapHeight.Ceil()) + cr.movePadding*2
 	return cr
 }
 
@@ -106,7 +94,6 @@ func (r *HudRenderer) Draw(x, y int, game state.Game, battle *combat.Battle, tar
 		if i != 0 {
 			hud.PadY()
 			hud.PadY()
-			hud.PadY()
 		}
 		hud.RenderCharacterName(c, selected)
 		hud.PadY()
@@ -123,8 +110,9 @@ func (h *HudRenderCtx) RenderCharacterName(c *combat.BattleCharacter, isSelected
 	if isSelected {
 		clr = h.cfg.flashSelected(style.ColorHighlightBright, style.ColorHighlightDark)
 	}
-	b := drawutil.NewTextDrawer(h.cfg.faceName, h.bounds.Min.X+h.cfg.padding, h.bounds.Max.Y, clr).
-		Shadowed(4, 4, colornames.Black).
+	b := drawutil.NewTextDrawer(assets.Fonts.TitleLarge, h.bounds.Min.X+h.cfg.padding, h.bounds.Max.Y, clr).
+		Shadowed(1, 1, colornames.Black).
+		//Move(0, assets.Fonts.TitleLarge.Metrics().Height.Round()).
 		Draw(c.Details.Name, h.target)
 	h.bounds = h.bounds.Union(b)
 }
@@ -132,20 +120,20 @@ func (h *HudRenderCtx) RenderCharacterName(c *combat.BattleCharacter, isSelected
 func (h *HudRenderCtx) RenderHealth(c *combat.BattleCharacter, isSelected bool) {
 	bp := h.cfg.barBorderWidth
 	innerWidth := int(float64(c.Details.MaxLife) * h.cfg.barHealthWidthScale)
-	innerHeight := int(float64(h.cfg.faceBarNumber.Metrics().CapHeight.Ceil()) * 1)
+	innerHeight := int(float64(assets.Fonts.TextTiny.Metrics().CapHeight.Ceil()) * 1)
 	outerBarWidth := innerWidth + bp*4
 
 	hpTxt := strings.ReplaceAll(fmt.Sprintf("%d", c.LagLife), "0", "O")
 	maxHpTxt := strings.ReplaceAll(fmt.Sprintf("%d", c.Details.MaxLife), "0", "O")
 	outOfText := strings.ReplaceAll(fmt.Sprintf("/%d HP", c.Details.MaxLife), "0", "O")
-	hpDrawer := drawutil.NewTextDrawer(h.cfg.faceBarNumber, 0, 0, style.ColorBright1)
-	hpDrawer.Shadowed(2, 2, style.ColorDark1)
+	hpDrawer := drawutil.NewTextDrawer(assets.Fonts.TextTiny, 0, 0, style.ColorBright1)
+	hpDrawer.Shadowed(1, 1, style.ColorDark1)
 	hpBounds := hpDrawer.BoundsOf(hpTxt)
 	maxHpBounds := hpDrawer.BoundsOf(maxHpTxt)
 
-	hpDrawer.Face = assets.Fonts.NumbersMicro
+	hpDrawer.Face = assets.Fonts.TextTiny
 	outOfBounds := hpDrawer.BoundsOf(outOfText)
-	hpDrawer.Face = h.cfg.faceBarNumber
+	hpDrawer.Face = assets.Fonts.TextTiny
 
 	hpDrawer.Move(h.bounds.Min.X+outerBarWidth+h.cfg.padding, h.bounds.Max.Y+bp*2)
 
@@ -191,9 +179,10 @@ func (h *HudRenderCtx) RenderHealth(c *combat.BattleCharacter, isSelected bool) 
 	hpDrawer.Move(maxHpBounds.Dx()-hpBounds.Dx(), 0)
 	hpDrawer.Draw(hpTxt, h.target)
 
-	hpDrawer.Move(hpBounds.Dx()+h.cfg.padding/4, (h.cfg.faceBarNumber.Metrics().CapHeight.Ceil()-assets.Fonts.NumbersMicro.Metrics().CapHeight.Ceil())/2)
-	hpDrawer.Face = assets.Fonts.NumbersMicro
+	hpDrawer.Move(hpBounds.Dx()+h.cfg.padding/4, (assets.Fonts.TextTiny.Metrics().CapHeight.Ceil()-assets.Fonts.TextTiny.Metrics().CapHeight.Ceil())/2)
+	hpDrawer.Face = assets.Fonts.TextTiny
 	hpDrawer.AlignHorizontal = drawutil.AlignLeft
+	hpDrawer.Color(style.ColorBright3)
 	hpDrawer.Draw(outOfText, h.target)
 }
 
@@ -236,9 +225,11 @@ func (h *HudRenderCtx) RenderMoveQueue(char *combat.BattleCharacter, isSelected 
 	}
 
 	// draw current move box
-	currentColor := style.Flash(style.ColorPurpleDark, style.ColorPurpleBright, transitionPct, 0.5)
+	var currentColor colorful.Color
 	if len(char.MoveQueue) == 0 {
 		currentColor = h.cfg.flashSelected(style.ColorDark2, style.ColorDark3)
+	} else {
+		currentColor = style.Flash(style.ColorPurpleDark, style.ColorPurpleBright, h.cfg.time, 1)
 	}
 	canvas.DrawRectangle(h.cfg.queueBoxBorder, h.cfg.queueBoxBorder, h.cfg.currentMoveInnerWidth, canvasH-h.cfg.queueBoxBorder*2)
 	canvas.SetColor(currentColor)
@@ -248,7 +239,7 @@ func (h *HudRenderCtx) RenderMoveQueue(char *combat.BattleCharacter, isSelected 
 	if len(char.MoveQueue) == 0 {
 		clr := h.cfg.flashSelected(style.ColorGray, style.ColorGray)
 		clr = style.ColorBright2
-		drawutil.NewTextDrawer(h.cfg.faceMoveQueue, int(h.cfg.queueBoxBorder), int(h.cfg.queueBoxBorder), clr).
+		drawutil.NewTextDrawer(assets.Fonts.TextSmall, int(h.cfg.queueBoxBorder), int(h.cfg.queueBoxBorder), clr).
 			Bounded(int(h.cfg.currentMoveInnerWidth), int(float64(canvas.Height())-h.cfg.queueBoxBorder*2), drawutil.AlignCenter, drawutil.AlignMiddle).
 			DrawToCanvas("No Move!", canvas)
 	}
@@ -271,8 +262,8 @@ func (h *HudRenderCtx) RenderMoveQueue(char *combat.BattleCharacter, isSelected 
 			if id == 0 {
 				totalW = float64(m.Move.Duration.ToCombatTime()-m.ElapsedTime) * h.cfg.moveWidthScale
 				moveBoxW = totalW - h.cfg.moveMargin
-				fillColor = style.Flash(fillColor, style.ColorPurpleDark, transitionPct, 0.5)
-				borderColor = style.Flash(borderColor, style.ColorPurpleBright, transitionPct, 0.5)
+				fillColor = style.Flash(fillColor, currentColor, transitionPct, 0.5)
+				borderColor = style.Flash(borderColor, currentColor, transitionPct, 0.5)
 				borderThickness = borderThickness + (boxH-borderThickness*2)*transitionPct
 				textDx = -1.0 * transitionPct * h.cfg.currentMoveInnerWidth
 				nameColor = style.Flash(nameColor, style.ColorBright1, transitionPct, 0.5)
@@ -296,10 +287,13 @@ func (h *HudRenderCtx) RenderMoveQueue(char *combat.BattleCharacter, isSelected 
 			canvas.SetColor(borderColor)
 			canvas.Stroke()
 
-			drawutil.NewTextDrawer(h.cfg.faceMoveQueue, int(boxX+h.cfg.movePadding*2+h.cfg.moveBorder), int(boxY+h.cfg.movePadding), nameColor).
+			td := drawutil.NewTextDrawer(assets.Fonts.TextSmall, int(boxX+h.cfg.movePadding*2+h.cfg.moveBorder), int(boxY+h.cfg.movePadding), nameColor).
 				Move(int(textDx), 0).
-				Bounded(int(boxW-h.cfg.movePadding*4-h.cfg.moveBorder*2), int(boxH-h.cfg.movePadding*2), drawutil.AlignLeft, drawutil.AlignMiddle).
-				DrawToCanvas(string(m.Move.Name), canvas)
+				Bounded(int(boxW-h.cfg.movePadding*4-h.cfg.moveBorder*2), int(boxH-h.cfg.movePadding*2), drawutil.AlignLeft, drawutil.AlignMiddle)
+			if id == 0 && transitionPct >= 0.5 {
+				td.Shadowed(1, 1, style.ColorDark1)
+			}
+			td.DrawToCanvas(string(m.Move.Name), canvas)
 			x += totalW
 		}
 	}
@@ -312,9 +306,9 @@ func (h *HudRenderCtx) RenderMoveQueue(char *combat.BattleCharacter, isSelected 
 }
 
 func (h *HudRenderCtx) RenderMoveSlots(char *combat.BattleCharacter, selected bool) {
-	canvas := gg.NewContext(int(h.cfg.moveSlotSize*8), int(h.cfg.moveSlotSize+h.cfg.moveSlotBorder*2))
-	textDrawer := drawutil.NewTextDrawer(h.cfg.faceBarNumber, h.bounds.Min.X+int(h.cfg.moveSlotSize/2.0), h.bounds.Max.Y+int(h.cfg.moveSlotSize), style.ColorBright1).
-		Bounded(int(h.cfg.moveSlotSize), h.cfg.faceBarNumber.Metrics().Height.Round(), drawutil.AlignCenter, drawutil.AlignBottom)
+	canvas := gg.NewContext(int(h.cfg.moveSlotSize*4+h.cfg.moveSlotBorder*16), int(h.cfg.moveSlotSize+h.cfg.moveSlotBorder*2))
+	textDrawer := drawutil.NewTextDrawer(assets.Fonts.TextTiny, h.bounds.Min.X+int(h.cfg.moveSlotBorder*2), h.bounds.Max.Y+int(h.cfg.moveSlotSize+h.cfg.moveSlotBorder), style.ColorBright1).
+		Bounded(int(h.cfg.moveSlotSize), assets.Fonts.TextTiny.Metrics().Height.Round(), drawutil.AlignCenter, drawutil.AlignBottom)
 
 	remainingQueue := char.Details.MaxMoveQueueDepth.ToCombatTime() - char.MoveQueueTimeDepth
 	for i, moveId := range char.Details.Moves.AsSlice() {
@@ -322,7 +316,7 @@ func (h *HudRenderCtx) RenderMoveSlots(char *combat.BattleCharacter, selected bo
 			continue
 		}
 		move := moves.Get(moveId)
-		x := float64(h.cfg.moveSlotSize) * (0.5 + float64(i*2))
+		x := float64(h.cfg.moveSlotSize+h.cfg.moveSlotBorder*4)*float64(i) + h.cfg.moveSlotBorder*2
 		y := h.cfg.moveSlotBorder
 		opt := &ebiten.DrawImageOptions{}
 		opt.GeoM.Scale(
@@ -345,10 +339,10 @@ func (h *HudRenderCtx) RenderMoveSlots(char *combat.BattleCharacter, selected bo
 		canvas.ClearPath()
 
 		textDrawer.Draw(fmt.Sprintf("%d", i+1), h.target)
-		textDrawer.Move(int(h.cfg.moveSlotSize*2), 0)
+		textDrawer.Move(int(h.cfg.moveSlotSize+h.cfg.moveSlotBorder*4), 0)
 	}
 	barImgOpt := &ebiten.DrawImageOptions{}
 	barImgOpt.GeoM.Translate(float64(h.bounds.Min.X), float64(h.bounds.Max.Y))
 	h.target.DrawImage(ebiten.NewImageFromImage(canvas.Image()), barImgOpt)
-	h.bounds = h.bounds.Union(drawutil.NewSizedRect(h.bounds.Min.X, h.bounds.Max.Y, canvas.Width(), canvas.Height()+h.cfg.faceBarNumber.Metrics().Height.Round()))
+	h.bounds = h.bounds.Union(drawutil.NewSizedRect(h.bounds.Min.X, h.bounds.Max.Y, canvas.Width(), canvas.Height()+assets.Fonts.TextTiny.Metrics().Height.Round()+int(h.cfg.moveSlotBorder)))
 }

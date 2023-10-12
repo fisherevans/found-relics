@@ -70,7 +70,7 @@ func (s *State) Draw(game state.Game, screen *ebiten.Image) {
 }
 
 func (s *State) debugSummary(screen *ebiten.Image) {
-	text := drawutil.NewTextDrawer(assets.Fonts.TextSmall.Regular, screen.Bounds().Dx()-400, 20, color.White).
+	text := drawutil.NewTextDrawer(assets.Fonts.TextTiny, screen.Bounds().Dx()-100, 20, color.White).
 		Shadowed(1, 1, colornames.Black)
 	render := func(char *combat.BattleCharacter, color color.Color) {
 		text.Color(color)

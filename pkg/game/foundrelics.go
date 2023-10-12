@@ -26,9 +26,3 @@ func (g *FoundRelics) Update() error {
 func (g *FoundRelics) Draw(screen *ebiten.Image) {
 	g.currentState.Draw(g, screen)
 }
-
-func (g *FoundRelics) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	s := ebiten.DeviceScaleFactor()
-	//s = 1
-	return int(float64(outsideWidth) * s), int(float64(outsideHeight) * s)
-}

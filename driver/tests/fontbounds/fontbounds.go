@@ -10,7 +10,7 @@ var f font.Face
 
 func main() {
 	assets2.Initialize()
-	f = assets2.Fonts.TextLarge.Regular
+	f = assets2.Fonts.TitleLarge
 
 	fmt.Printf("height: %d, caph: %d, xh: %d, des: %d, asc: %d\n",
 		f.Metrics().Height.Round(),

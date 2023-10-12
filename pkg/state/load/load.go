@@ -70,5 +70,5 @@ func (s *State) reset() {
 }
 
 func (s *State) Draw(game state.Game, screen *ebiten.Image) {
-	drawutil.DrawString(s.text, assets.Fonts.TitleOutlineSmall, 100, 100, color.White, screen)
+	drawutil.DrawString(s.text, assets.Fonts.TitleLarge, 100, 100, color.White, screen)
 }
